@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Jeu 3D - Aventure</title>
+    <style>
+/* ================================
+   BACKGROUND GRADIENT
+================================ */
+body {
+  background: linear-gradient(135deg, #11c2cb 0%, #05c481 100%);
+  background-attachment: fixed;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
+
+/* ================================
+   BANDE LUMINEUSE AUTOUR DE L'ÉCRAN
+================================ */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 99%;
+  height: 98%;
+  pointer-events: none;
+
+  border-radius: 20px;
+  z-index: 9999;
+
+  /* Le dégradé NE PEUT PAS être mis dans border → on le met en background */
+  background: linear-gradient(135deg, #00ffdd 0%, #0004ff 100%);
+
+  /* On crée un contour en utilisant un masque */
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+
+  padding: 6px; /* épaisseur du contour */
+
+  box-shadow:
+    0 0 25px rgba(0, 255, 204, 0.8),
+    inset 0 0 25px rgba(0, 206, 213, 0.35);
+}
+
+
+/* ================================
+   LAUNCHER GLASS + BORDER GLOW
+================================ */
+#launcher {
+  z-index: 9998;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgb(16, 16, 16);
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 40px rgba(255,255,255,0.25);
+
+  border-radius: 25px;
+  animation: launcherAppear 0.8s ease forwards;
+}
+
+/* Animation */
+@keyframes launcherAppear {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ================================
+   TITRE
+================================ */
+.launcher-title {
+  font-size: 3.5rem;
+  font-weight: bold;
+  color: white;
+  text-shadow: 0 0 15px rgba(255,255,255,0.7);
+  margin-bottom: 20px;
+}
+
+/* ================================
+   STYLE GLOBAL DES BOUTONS
+================================ */
+.launcher-btn,
+button {
+  padding: 15px 45px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  border-radius: 18px;
+  border: none;
+  cursor: pointer;
+
+  background: linear-gradient(135deg, #00ffdd 0%, #0004ff 100%);
+  color: white;
+
+  box-shadow: 0 0 20px rgba(17, 194, 203, 0.6);
+  transition: 0.25s ease;
+}
+
+.launcher-btn:hover,
+button:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0 30px rgba(17, 194, 203, 0.9);
+}
+
+.launcher-btn:active,
+button:active {
+  transform: translateY(-1px);
+}
+
+/* ================================
+   PANNEAU CONTROLES
+================================ */
+.controls-hint {
+  background: rgba(255,255,255,0.15);
+  border-radius: 15px;
+  padding: 15px;
+  color: white;
+
+  border: 1px solid rgba(255,255,255,0.25);
+  box-shadow: 0 0 20px rgba(255,255,255,0.15);
+}
+
+/* ================================
+   TEXTE
+================================ */
+.launcher-subtitle,
+.launcher-info {
+  color: white;
+  text-shadow: 0 0 10px rgba(255,255,255,0.4);
+}
+.btn-play {
+  background: linear-gradient(135deg, #00ffdd 0%, #0004ff 100%);
+  color: white;
+  box-shadow: 0 0 20px rgba(17, 194, 203, 0.6);
+  transition: 0.25s ease;
+  position: relative;
+
+}
+
+    </style>
+    <script type="module" crossorigin src="./assets/index-C5d6nnzA.js"></script>
+  </head>
+  <body>
+    <!-- LAUNCHER SCREEN -->
+    <div id="launcher">
+      <div class="launcher-content">
+        <div class="launcher-title">🎮 3D QUEST</div>
+        <div class="launcher-subtitle">Bienvenue dans une aventure extraordinaire</div>
+        
+        <div class="controls-hint">
+          <h3>Contrôles</h3>
+          <p>🎮 <strong>PC:</strong> ZQSD + Souris + Espace</p>
+          <p>📱 <strong>Mobile:</strong> Joystick + Caméra tactile</p>
+          <p>🎮 <strong>Manette:</strong> Stick gauche + Droit</p>
+        </div>
+        
+        <div class="launcher-buttons" style="margin-top: 50px;">
+          <button class="launcher-btn btn-play" id="playBtn">▶ JOUER</button>
+        </div>
+      </div>
+      
+      <div class="launcher-info">
+        <p>Collecte les pièces • Saute sur les plateformes • Explore les mondes</p>
+        <p style="font-size: 0.8rem; margin-top: 10px;">Hébergé sur GitHub • Créé avec Three.js</p>
+      </div>
+    </div>
+    
+    <!-- GAME CONTAINER -->
+    <div id="game-container"></div>
+    
+    <script>
+      const launcher = document.getElementById('launcher');
+      const gameContainer = document.getElementById('game-container');
+      const playBtn = document.getElementById('playBtn');
+      
+      playBtn.addEventListener('click', () => {
+        // Animation de fermeture du launcher
+        launcher.classList.add('hidden');
+        gameContainer.classList.add('active');
+        
+        // Charger le jeu après l'animation
+        setTimeout(() => {
+          launcher.style.display = 'none';
+        }, 500);
+      });
+      
+      // Touches clavier pour lancer
+      document.addEventListener('keydown', (e) => {
+        if ((e.code === 'Enter' || e.code === 'Space') && !gameContainer.classList.contains('active')) {
+          playBtn.click();
+        }
+      });
+      
+      // Touch pour lancer sur mobile
+      document.addEventListener('touchstart', (e) => {
+        if (!gameContainer.classList.contains('active') && e.target === playBtn) {
+          playBtn.click();
+        }
+      });
+    </script>
+    
+  </body>
+</html>
